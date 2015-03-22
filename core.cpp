@@ -1,21 +1,32 @@
 #include "core.h"
-#include "ui_mainwindow.h"
+#include "json.h"
 
 core::core() :
     settings("Yuri_Babinets", "StreamNotifier")
 {
-    channelList = new QStringList;
-    settingsWindow = new dialogSettings;
+    localVersion    = 0.1;
+    channelList     = new QStringList;
+    channelOnlineList=new QStringList;
+    settingsWindow  = new dialogSettings;
+    web             = new NetworkRequests;
+    checkTimer      = new QTimer;
+    currentChannel  = 0;
+    timerInterval   = 10* 60 * 1000;
     setTrayMenu();
     setTray();
     if(!loadSettings())
     {
         settingsWindow->show();
         trayIcon->showMessage("Twitch Steam Notifier приветствует Вас!",
-                              "Добавьте свои любимые каналы, а я Вас оповещу о начале трансляций!",
+                              "Добавьте свои любимые каналы, а я оповещу Вас о начале трансляций!",
                               QSystemTrayIcon::Information);
     }
     connect(settingsWindow, SIGNAL(channelListModified(QStringList*)), SLOT(commitChanges(QStringList*)));
+    connect(web, SIGNAL(ready(QByteArray)), SLOT(parseData(QByteArray)));
+    connect(checkTimer, SIGNAL(timeout()), SLOT(timeToCheck()));
+    connect(trayIcon, SIGNAL(messageClicked()), SLOT(openLastURL()));
+    checkTimer->start(timerInterval);
+    QTimer::singleShot(3 * 60 * 1000, this, SLOT(checkUpdates()));
 }
 
 core::~core()
@@ -74,5 +85,80 @@ void core::settingsTriggered()
     settingsWindow->showSettings(channelList);
 }
 
+void core::parseData(QByteArray json)
+{
+    QString json_string(json);
+    bool ok;
+    QtJson::JsonObject parsed = QtJson::parse(json_string, ok).toMap();
+    QtJson::JsonObject tmp;
+    if(ok)
+    {
+        if(isCheckingUpdate & !parsed["stream"].toString().count())
+        {
+            float version(parsed["version"].toFloat());
+            isCheckingUpdate = false;
+            if(localVersion < version)
+            {
+                lastURL.setUrl(parsed["updateurl"].toString());
+                notifyUpdate(version);
+            }
+        }
+        else if(parsed["stream"].toString() != "null")
+            {
+                tmp = parsed["stream"].toMap();
+                tmp = tmp["channel"].toMap();
+                if(!channelOnlineList->contains(tmp["name"].toString()))
+                {
+                    lastURL.setUrl("http://www.twitch.tv/" + tmp["name"].toString());
+                    notifyStream(tmp["display_name"].toString(), tmp["game"].toString());
+                    channelOnlineList->append(tmp["name"].toString());
+                }
+            }
+            else
+            {
+                QString broadcasterName(parsed["self"].toString());
+                channelOnlineList->removeOne(broadcasterName.remove("https://api.twitch.tv/kraken/streams/"));
+            }
+    }
+}
+
+void core::timeToCheck()
+{
+    if(currentChannel < channelList->count())
+    {
+        web->sendRequest(QUrl("https://api.twitch.tv/kraken/streams/" + channelList->at(currentChannel)));
+        currentChannel++;
+        checkTimer->start(30 * 1000);
+    }
+    else {
+        currentChannel = 0;
+        checkTimer->start(timerInterval);
+    }
+}
+
+void core::notifyStream(QString user, QString game)
+{
+    trayIcon->showMessage(user + " начал трансляцию!",
+                          user +" играет в " + game + "! Нажми сюда, чтобы начать смотреть стрим!",
+                          QSystemTrayIcon::Information);
+}
+
+void core::openLastURL()
+{
+    QDesktopServices::openUrl(lastURL);
+}
+
+void core::checkUpdates()
+{
+    isCheckingUpdate = true;
+    web->sendRequest(QUrl("http://vkupdate.cosmostv.tv/streamnotifier.version"));
+}
+
+void core::notifyUpdate(float version)
+{
+    trayIcon->showMessage("Доступна " + QString::number(version) + " версия Twitch Steam Notifier!",
+                          "У Вас установлена " + QString::number(localVersion) + " версия. Рекомендуем обновиться! Подробную информацию о обновлении можно узнать кликнув по этому окну.",
+                          QSystemTrayIcon::Information);
+}
 
 
