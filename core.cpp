@@ -103,7 +103,7 @@ void core::parseData(QByteArray json)
                 notifyUpdate(version);
             }
         }
-        else if(parsed["stream"].toString() != "")
+        else if(parsed["stream"].toMap().contains("channel"))
             {
                 tmp = parsed["stream"].toMap();
                 tmp = tmp["channel"].toMap();
