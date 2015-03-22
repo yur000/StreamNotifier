@@ -6,6 +6,7 @@ dialogSettings::dialogSettings(QWidget *parent) :
     ui(new Ui::dialogSettings)
 {
     ui->setupUi(this);
+    setWindowTitle("Настройки");
 }
 
 void dialogSettings::showSettings(QStringList *channels)
