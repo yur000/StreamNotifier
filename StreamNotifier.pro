@@ -13,15 +13,19 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp \
     networkrequests.cpp \
-    json.cpp
+    json.cpp \
+    core.cpp \
+    dialogsettings.cpp
 
-HEADERS  += mainwindow.h \
+HEADERS  += \
     networkrequests.h \
-    json.h
+    json.h \
+    core.h \
+    dialogsettings.h
 
-FORMS    += mainwindow.ui
+FORMS    += \
+    dialogsettings.ui
 
 CONFIG += mobility
 MOBILITY = 
