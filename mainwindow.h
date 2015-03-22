@@ -25,10 +25,16 @@ private slots:
     void on_deleteChannel_clicked();
 
 private:
+    void            setTrayMenu();
+    void            setTray();
+    bool            loadSettings();
+    void            saveSettings();
     Ui::MainWindow  *ui;
     QListWidgetItem *currentItem;
     QSystemTrayIcon *trayIcon;
     QSettings        settings;
+    QMenu           *trayMenu;
+
 };
 
 #endif // MAINWINDOW_H

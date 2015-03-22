@@ -14,10 +14,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    networkrequests.cpp
+    networkrequests.cpp \
+    json.cpp
 
 HEADERS  += mainwindow.h \
-    networkrequests.h
+    networkrequests.h \
+    json.h
 
 FORMS    += mainwindow.ui
 
