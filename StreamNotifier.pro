@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -23,4 +23,7 @@ FORMS    += mainwindow.ui
 
 CONFIG += mobility
 MOBILITY = 
+
+RESOURCES += \
+    res.qrc
 
