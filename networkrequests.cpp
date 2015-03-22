@@ -11,19 +11,17 @@ NetworkRequests::NetworkRequests(QObject *parent) :
     connect(this, SIGNAL(ready(QByteArray,QString)), SLOT(checkState()));
 }
 
-void NetworkRequests::sendRequest(QUrl url_in, QString usage_in)
+void NetworkRequests::sendRequest(QUrl url_in)
 {
     qDebug() << "in net";
     if(busy)
     {
         reqNode = new requestNode;
         reqNode->url = url_in;
-        reqNode->usage = usage_in;
         reguestQuenue->enqueue(*reqNode);
     }
     else
     {
-        usage = usage_in;
         url = url_in;
         busy = true;
         QNetworkRequest request;
@@ -41,7 +39,7 @@ void NetworkRequests::getAnswer(QNetworkReply *reply)
         //QString str(bytes);
         //qDebug() << str;
         busy = false;
-        emit ready(bytes, usage);
+        emit ready(bytes);
     }
     else
     {
@@ -49,7 +47,6 @@ void NetworkRequests::getAnswer(QNetworkReply *reply)
         //reply->abort();
         reqNode = new requestNode;
         reqNode->url = url;
-        reqNode->usage = usage;
         reguestQuenue->enqueue(*reqNode);
         busy = false;
         QTimer::singleShot(2000, this, SLOT(checkState()));

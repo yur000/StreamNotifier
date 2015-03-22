@@ -12,7 +12,6 @@ class NetworkRequests : public QObject
     QString usage;
     struct requestNode
     {
-        QString usage;
         QUrl url;
     };
     QQueue<requestNode> *reguestQuenue;
@@ -20,11 +19,11 @@ class NetworkRequests : public QObject
     bool busy;
 public:
     explicit NetworkRequests(QObject *parent = 0);
-    void sendRequest(QUrl, QString);
+    void sendRequest(QUrl);
     ~NetworkRequests();
 
 signals:
-    void ready(QByteArray, QString);
+    void ready(QByteArray);
 private slots:
     void checkState();
     void getAnswer(QNetworkReply*);
