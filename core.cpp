@@ -4,14 +4,14 @@
 core::core() :
     settings("Yuri_Babinets", "StreamNotifier")
 {
-    localVersion    = 0.1;
+    localVersion    = 0.11;
     channelList     = new QStringList;
     channelOnlineList=new QStringList;
     settingsWindow  = new dialogSettings;
     web             = new NetworkRequests;
     checkTimer      = new QTimer;
     currentChannel  = 0;
-    timerInterval   = 10* 60 * 1000;
+    timerInterval   = 5 * 60 * 1000;
     setTrayMenu();
     setTray();
     if(!loadSettings())
@@ -103,7 +103,7 @@ void core::parseData(QByteArray json)
                 notifyUpdate(version);
             }
         }
-        else if(parsed["stream"].toString() != "null")
+        else if(parsed["stream"].toString() != "")
             {
                 tmp = parsed["stream"].toMap();
                 tmp = tmp["channel"].toMap();
