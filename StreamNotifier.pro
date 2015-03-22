@@ -33,3 +33,9 @@ MOBILITY =
 RESOURCES += \
     res.qrc
 
+DISTFILES += \
+    file.rc
+
+win32 {
+    RC_FILE += file.rc
+}

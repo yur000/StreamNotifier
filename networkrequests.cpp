@@ -8,7 +8,7 @@ NetworkRequests::NetworkRequests(QObject *parent) :
     busy = false;
     nam = new QNetworkAccessManager(this);
     connect(nam, SIGNAL(finished(QNetworkReply*)), SLOT(getAnswer(QNetworkReply*)));
-    connect(this, SIGNAL(ready(QByteArray,QString)), SLOT(checkState()));
+    connect(this, SIGNAL(ready(QByteArray)), SLOT(checkState()));
 }
 
 void NetworkRequests::sendRequest(QUrl url_in)
@@ -62,7 +62,7 @@ void NetworkRequests::checkState()
         if(!busy)
         {
             requestNode tmpNode = reguestQuenue->dequeue();
-            sendRequest(tmpNode.url, tmpNode.usage);
+            sendRequest(tmpNode.url);
         }
 
     }
