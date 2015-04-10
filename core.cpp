@@ -4,14 +4,14 @@
 core::core() :
     settings("Yuri_Babinets", "StreamNotifier")
 {
-    localVersion    = 0.11;
+    localVersion    = 0.2;
     channelList     = new QStringList;
     channelOnlineList=new QStringList;
     settingsWindow  = new dialogSettings;
     web             = new NetworkRequests;
     checkTimer      = new QTimer;
+    notifySoundPlayer=new QMediaPlayer;
     currentChannel  = 0;
-    timerInterval   = 5 * 60 * 1000;
     setTrayMenu();
     setTray();
     if(!loadSettings())
@@ -21,17 +21,25 @@ core::core() :
                               "Добавьте свои любимые каналы, а я оповещу Вас о начале трансляций!",
                               QSystemTrayIcon::Information);
     }
-    connect(settingsWindow, SIGNAL(channelListModified(QStringList*)), SLOT(commitChanges(QStringList*)));
+    connect(settingsWindow, SIGNAL(modified(QStringList*, settingsContainer*)), SLOT(commitChanges(QStringList*, settingsContainer*)));
     connect(web, SIGNAL(ready(QByteArray)), SLOT(parseData(QByteArray)));
     connect(checkTimer, SIGNAL(timeout()), SLOT(timeToCheck()));
     connect(trayIcon, SIGNAL(messageClicked()), SLOT(openLastURL()));
+    connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), SLOT(trayIconActivated(QSystemTrayIcon::ActivationReason)));
     checkTimer->start(timerInterval);
     QTimer::singleShot(3 * 60 * 1000, this, SLOT(checkUpdates()));
+    notifySoundPlayer->setMedia(QUrl(QFileInfo(pathToSound).absoluteFilePath()));
 }
 
 core::~core()
 {
     saveSettings();
+    trayIcon->deleteLater();
+    trayMenu->deleteLater();
+    web->deleteLater();
+    settingsWindow->deleteLater();
+    checkTimer->deleteLater();
+    notifySoundPlayer->deleteLater();
 }
 
 void core::setTrayMenu()
@@ -50,6 +58,19 @@ void core::setTray()
     trayIcon->show();
 }
 
+void core::trayIconActivated(QSystemTrayIcon::ActivationReason reason)
+{
+    switch (reason)
+    {
+        case QSystemTrayIcon::Trigger:
+        case QSystemTrayIcon::DoubleClick:
+            settingsTriggered();
+            break;
+        default:
+            break;
+    }
+}
+
 bool core::loadSettings()
 {
     settings.beginGroup("/Channels");
@@ -58,6 +79,11 @@ bool core::loadSettings()
     {
         channelList->append(settings.value("Channel_" + QString::number(i), "Delete ME").toString());
     }
+    settings.endGroup();
+    settings.beginGroup("/Settings");
+    isSound = settings.value("isSound", true).toBool();
+    timerInterval = settings.value("timerInterval", 10*60*1000).toInt();
+    pathToSound.append(settings.value("pathToSound", "/ICQ.mp3").toString());
     settings.endGroup();
     if(channelsNum) return true;
     else return false;
@@ -72,17 +98,31 @@ void core::saveSettings()
         settings.setValue("Channel_" + QString::number(i), channelList->at(i));
     }
     settings.endGroup();
+    settings.beginGroup("/Settings");
+    settings.setValue("isSound", isSound);
+    settings.setValue("timerInterval", timerInterval);
+    settings.setValue("pathToSound", pathToSound);
+    settings.endGroup();
 }
 
-void core::commitChanges(QStringList *channels)
+void core::commitChanges(QStringList *channels, settingsContainer *notifySettings)
 {
     channelList->clear();
+    pathToSound.clear();
     channelList->append(*channels);
+    pathToSound.append(notifySettings->soundPath);
+    timerInterval = notifySettings->timeToCheck;
+    isSound = notifySettings->isSound;
+    notifySoundPlayer->setMedia(QUrl(QFileInfo(pathToSound).absoluteFilePath()));
 }
 
 void core::settingsTriggered()
 {
-    settingsWindow->showSettings(channelList);
+    settingsContainer *notifySettings = new settingsContainer;
+    notifySettings->isSound = isSound;
+    notifySettings->soundPath = pathToSound;
+    notifySettings->timeToCheck = timerInterval;
+    settingsWindow->showSettings(channelList, notifySettings);
 }
 
 void core::parseData(QByteArray json)
@@ -138,6 +178,7 @@ void core::timeToCheck()
 
 void core::notifyStream(QString user, QString game)
 {
+    if(isSound) notifySoundPlayer->play();
     trayIcon->showMessage(user + " начал трансляцию!",
                           user +" играет в " + game + "! Нажми сюда, чтобы начать смотреть стрим!",
                           QSystemTrayIcon::Information);
@@ -156,6 +197,7 @@ void core::checkUpdates()
 
 void core::notifyUpdate(float version)
 {
+    if(isSound) notifySoundPlayer->play();
     trayIcon->showMessage("Доступна " + QString::number(version) + " версия Twitch Steam Notifier!",
                           "У Вас установлена " + QString::number(localVersion) + " версия. Рекомендуем обновиться! Подробную информацию о обновлении можно узнать кликнув по этому окну.",
                           QSystemTrayIcon::Information);
