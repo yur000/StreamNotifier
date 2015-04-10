@@ -3,7 +3,7 @@
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
-    core app;
-    return a.exec();
+    QApplication app(argc, argv);
+    core mainApp;
+    return app.exec();
 }
